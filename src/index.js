@@ -43,10 +43,15 @@ function Peli() {
   // Muodosta tasot
   this.xKohta = 0
 
-  kentat.forEach(kentta => {
-    this.tasot.push(new Taso(this.xKohta, kentta[0], kentta[1], 10))
-    this.xKohta += kentta[1]
-  })
+  this.lisaaTasot = function (tasoLista) {
+    tasoLista.forEach(kentta => {
+      this.tasot.push(new Taso(this.xKohta - this.matka, kentta[0], kentta[1], 10))
+      this.xKohta += kentta[1]
+      console.log('xkohta', this.xKohta, 'leveys', kentta[1])
+    })
+  }
+
+  this.lisaaTasot(kentat)
 }
 // Ukkeli
 function Ukkeli() {
@@ -106,6 +111,8 @@ function peliSilmukka() {
 
   if ((hahmo.y + hahmo.kork) > base.board[1]) base.lopeta()
 
+  base.peli.tasot = base.peli.tasot.filter(taso => taso.x + taso.leve > 0)
+
   // Tasojen liikuttaminen
   liikutaTasoja()
 
@@ -117,7 +124,7 @@ function peliSilmukka() {
 }
 
 function lopetaPeli() {
-  ctx.clearRect(0, 0, base.board[0], base.board[1]);
+  ctx.clearRect(0, 0, base.board[0], base.board[1])
   console.log('base', base)
 
   ctx.font = '72px serif'
@@ -140,6 +147,12 @@ function tulosta() {
 }
 
 function liikutaTasoja() {
+  if (base.peli.matka + base.board[0] >= base.peli.xKohta) {
+    base.peli.lisaaTasot(kentat)
+    console.log('peli loppuu, lisätään tasoja', base.peli.xKohta, base.peli.tasot)
+    base.peli.nopeus += 2
+  }
+
   base.peli.tasot.forEach(taso => taso.x -= base.peli.nopeus)
 }
 
