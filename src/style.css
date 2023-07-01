@@ -1,0 +1,14 @@
+* {
+  font-family: sans-serif;
+}
+body {
+  background: darkblue;
+}
+
+.peli-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
