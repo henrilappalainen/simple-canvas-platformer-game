@@ -6,6 +6,18 @@ import './style.css'
 const base = {
   peli: null,
   board: [640, 480],
+  aloita: function () {
+    // Nollaa peli jos se on jo käynnissä
+    if (this.peli) this.peli = null
+
+    this.peli = new Peli()
+    paivitaPainikkeet(2)
+    peliSilmukka()
+  },
+  lopeta: function () {
+    this.peli.jatkuu = false
+    paivitaPainikkeet(1)
+  },
 }
 
 // Kentät
@@ -26,13 +38,14 @@ function Peli() {
   this.jatkuu = true
   this.tasot = []
   this.nopeus = 3
+  this.matka = 0
 
   // Muodosta tasot
-  let xKohta = 0
+  this.xKohta = 0
 
   kentat.forEach(kentta => {
-    this.tasot.push(new Taso(xKohta, kentta[0], kentta[1], 10))
-    xKohta += kentta[1]
+    this.tasot.push(new Taso(this.xKohta, kentta[0], kentta[1], 10))
+    this.xKohta += kentta[1]
   })
 }
 // Ukkeli
@@ -52,37 +65,33 @@ function Taso(x, y, leve, kork) {
 }
 
 // ### Controller
-// Init game
-function initGame() {
-  base.peli = new Peli()
-  base.peli.tasot
 
-  console.log('peli', base.peli)
+function paivitaPainikkeet(state) {
+  // States 1: menu, 2: running, 3: score (otherwise abort)
+  if (![1,2,3].includes(state)) return
 
-  peliSilmukka()
+  if (state === 1) {
+    hyppyPainike.remove()
+    painikkeidenLaatikko.appendChild(aloitusPainike)
+    lopetusPainike.remove()
+  } else if (state === 2) {
+    painikkeidenLaatikko.appendChild(hyppyPainike)
+    aloitusPainike.remove()
+    painikkeidenLaatikko.appendChild(lopetusPainike)
+  } else {
+    hyppyPainike.remove()
+    lopetusPainike.remove()
+    painikkeidenLaatikko.appendChild(aloitusPainike)
+  }
 }
 
 function peliSilmukka() {
-  let previousTimeStamp;
+  ctx.fillStyle = 'cornflowerblue'
+  ctx.fillRect(0, 0, base.board[0], base.board[1])
+  ctx.save()
 
-  function step(timeStamp) {
-    ctx.fillStyle = 'cornflowerblue'
-    ctx.fillRect(0, 0, base.board[0], base.board[1])
-    ctx.save()
+  base.peli.matka += base.peli.nopeus
 
-    tulosta()
-    ctx.restore()
-  
-    // Stop the animation after 2 seconds
-    previousTimeStamp = timeStamp
-
-    if (base.peli && base.peli.jatkuu) window.requestAnimationFrame(step)
-  }
-  
-  window.requestAnimationFrame(step)
-}
-
-function tulosta() {
   // Hahmo
   const hahmo = base.peli.hahmo
   const onTasolla = tsekkaaOnkoTasolla(hahmo)
@@ -95,8 +104,29 @@ function tulosta() {
 
   hahmo.y += hahmo.vauhti
 
+  if ((hahmo.y + hahmo.kork) > base.board[1]) base.lopeta()
+
   // Tasojen liikuttaminen
   liikutaTasoja()
+
+  tulosta()
+  ctx.restore()
+
+  if (base.peli && base.peli.jatkuu) window.requestAnimationFrame(peliSilmukka)
+  else lopetaPeli()
+}
+
+function lopetaPeli() {
+  ctx.clearRect(0, 0, base.board[0], base.board[1]);
+  console.log('base', base)
+
+  ctx.font = '72px serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('pisteet ' + base.peli.matka, base.board[0] / 2, base.board[1] / 2, base.board[0] - 20)
+}
+
+function tulosta() {
+  const hahmo = base.peli.hahmo
 
   // Render hahmo
   ctx.fillStyle = 'tomato'
@@ -143,20 +173,22 @@ const canvas = document.createElement('canvas')
 canvas.width = base.board[0]
 canvas.height = base.board[1]
 appContainer.appendChild(canvas)
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d")
 
 const painikkeidenLaatikko = document.createElement('div')
 painikkeidenLaatikko.classList.add('painikkeiden-laatikko')
 appContainer.appendChild(painikkeidenLaatikko)
 
-const jumpButton = document.createElement('button')
-jumpButton.innerHTML = 'Hyppää!'
-jumpButton.addEventListener('click', () => hyppaa() )
-painikkeidenLaatikko.appendChild(jumpButton)
+const hyppyPainike = document.createElement('button')
+hyppyPainike.innerHTML = 'Hyppää!'
+hyppyPainike.addEventListener('click', () => hyppaa() )
 
-const exitButton = document.createElement('button')
-exitButton.innerHTML = 'Lopeta peli'
-exitButton.addEventListener('click', () => base.peli.jatkuu = false )
-painikkeidenLaatikko.appendChild(exitButton)
+const aloitusPainike = document.createElement('button')
+aloitusPainike.innerHTML = 'Aloita peli'
+aloitusPainike.addEventListener('click', () => base.aloita() )
 
-initGame()
+const lopetusPainike = document.createElement('button')
+lopetusPainike.innerHTML = 'Lopeta peli'
+lopetusPainike.addEventListener('click', () => base.lopeta() )
+
+paivitaPainikkeet(1)
